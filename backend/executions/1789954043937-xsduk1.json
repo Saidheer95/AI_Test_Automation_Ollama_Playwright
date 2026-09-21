@@ -1,0 +1,6 @@
+{
+  "workflow": "APPROVE_PR",
+  "parameters": {
+    "prNumber": "PR_00855"
+  }
+}

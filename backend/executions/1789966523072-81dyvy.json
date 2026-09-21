@@ -1,0 +1,6 @@
+{
+  "workflow": "CREATE_PR",
+  "parameters": {
+    "quantity": 5
+  }
+}

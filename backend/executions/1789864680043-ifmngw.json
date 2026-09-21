@@ -1,0 +1,7 @@
+{
+  "workflow": "CREATE_PR",
+  "parameters": {
+    "item": "laptops",
+    "quantity": 5
+  }
+}
