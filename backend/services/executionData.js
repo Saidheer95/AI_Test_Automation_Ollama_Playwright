@@ -1,30 +1,3 @@
-// const fs = require('fs');
-// const path = require('path');
-
-// const DATA_DIR = path.join(__dirname, '..', 'executions');
-
-// function createExecutionData(executionId, data) {
-//     fs.mkdirSync(DATA_DIR, { recursive: true });
-
-//     const filePath = path.join(
-//         DATA_DIR,
-//         `${executionId}.json`
-//     );
-
-//     fs.writeFileSync(
-//         filePath,
-//         JSON.stringify(data, null, 2),
-//         'utf8'
-//     );
-
-//     return filePath;
-// }
-
-// module.exports = {
-//     createExecutionData
-// };
-
-
 const fs = require('fs');
 const path = require('path');
 
