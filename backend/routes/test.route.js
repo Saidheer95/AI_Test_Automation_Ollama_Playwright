@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 
 const {
     testRegistry
@@ -19,6 +20,7 @@ const {
 } = require('../services/test.runner');
 
 const router = express.Router();
+const REPORTS_DIR = path.join(__dirname, '..', 'reports');
 
 router.get('/', (req, res) => {
     res.json({
@@ -89,6 +91,35 @@ router.get('/execution/:id', (req, res) => {
         success: true,
         execution
     });
+});
+
+router.use('/execution/:id/report', (req, res, next) => {
+    const execution = getExecution(req.params.id);
+
+    if (!execution) {
+        return res.status(404).json({
+            success: false,
+            message: 'Execution not found'
+        });
+    }
+
+    if (execution.report?.status !== 'READY') {
+        return res.status(404).json({
+            success: false,
+            message: 'Allure report is not available for this execution'
+        });
+    }
+
+    const reportDirectory = path.resolve(
+        REPORTS_DIR,
+        execution.id,
+        'allure-report'
+    );
+
+    express.static(reportDirectory, {
+        fallthrough: false,
+        index: 'index.html'
+    })(req, res, next);
 });
 
 module.exports = router;
