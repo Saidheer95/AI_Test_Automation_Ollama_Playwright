@@ -309,25 +309,6 @@ These files capture:
 
 This makes it easy to inspect the exact data that was sent to the Playwright layer for each test run.
 
-When the Playwright project has the Allure Playwright reporter configured, the backend directs its results to a unique folder under `backend/reports` and generates an HTML report when the test completes. The report is displayed in the execution panel and can also be opened separately.
-
-Install and configure the Allure packages in the Playwright project referenced by `PLAYWRIGHT_PROJECT`:
-
-```bash
-npm install --save-dev allure-playwright allure-commandline
-```
-
-Add the reporter to that project's `playwright.config.js` (keep any existing reporters as needed):
-
-```js
-reporter: [
-  ['list'],
-  ['allure-playwright']
-]
-```
-
-The backend preserves the reporter configuration from the Playwright project and sets `ALLURE_RESULTS_DIR` for each run. Allure report generation requires the Allure CLI and Java to be available in that project's environment.
-
 ## Summary
 
 This repository is a working demo for safe, local AI orchestration of Playwright test automation. It is designed to show that natural-language prompts can be translated into controlled, validated business workflows without exposing the system to unrestricted automation or command execution.

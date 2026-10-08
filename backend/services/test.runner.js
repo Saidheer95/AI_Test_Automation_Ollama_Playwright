@@ -1,8 +1,6 @@
 const {
     spawn
 } = require('child_process');
-const fs = require('fs');
-const path = require('path');
 
 const {
     testRegistry,
@@ -17,56 +15,6 @@ const {
 const {
     createExecutionData
 } = require('./executionData');
-
-const REPORTS_DIR = path.join(__dirname, '..', 'reports');
-
-function runAllureReport(executionId, resultsDir, reportDir) {
-    const command = `npx --no-install allure generate "${resultsDir}" --clean --output "${reportDir}"`;
-
-    return new Promise(resolve => {
-        let output = '';
-        let settled = false;
-        let child;
-
-        try {
-            child = spawn(
-                'cmd.exe',
-                ['/d', '/s', '/c', command],
-                {
-                    cwd: PLAYWRIGHT_PROJECT,
-                    windowsHide: true
-                }
-            );
-        } catch (error) {
-            resolve({ success: false, message: error.message });
-            return;
-        }
-
-        child.stdout.on('data', data => {
-            output += data.toString();
-        });
-        child.stderr.on('data', data => {
-            output += data.toString();
-        });
-        child.on('error', error => {
-            if (!settled) {
-                settled = true;
-                resolve({ success: false, message: error.message });
-            }
-        });
-        child.on('close', code => {
-            if (settled) return;
-            settled = true;
-            resolve({
-                success: code === 0,
-                message: code === 0
-                    ? ''
-                    : output.trim() || `Allure CLI exited with code ${code}`
-            });
-        });
-    });
-}
-
 
 function runTest(
     executionId,
@@ -102,24 +50,12 @@ function runTest(
             }
         );
 
-    const executionReportDir = path.join(REPORTS_DIR, executionId);
-    const allureResultsDir = path.join(executionReportDir, 'allure-results');
-    const allureHtmlDir = path.join(executionReportDir, 'allure-report');
-
-    fs.mkdirSync(allureResultsDir, { recursive: true });
-
-
     updateExecution(
         executionId,
         {
             status: 'RUNNING',
             startedAt:
-                new Date().toISOString(),
-            report: {
-                status: 'GENERATING',
-                url: null,
-                message: null
-            }
+                new Date().toISOString()
         }
     );
 
@@ -180,9 +116,7 @@ function runTest(
                     ...process.env,
 
                     TEST_EXECUTION_DATA:
-                        dataFile,
-                    ALLURE_RESULTS_DIR:
-                        allureResultsDir
+                        dataFile
                 }
             }
         );
@@ -197,11 +131,6 @@ function runTest(
             {
                 status: 'FAILED',
                 result: error.message,
-                report: {
-                    status: 'FAILED',
-                    url: null,
-                    message: 'Playwright could not be started.'
-                },
                 completedAt:
                     new Date().toISOString()
             }
@@ -256,11 +185,6 @@ function runTest(
                 {
                     status: 'FAILED',
                     result: error.message,
-                    report: {
-                        status: 'FAILED',
-                        url: null,
-                        message: 'Playwright could not be started.'
-                    },
                     completedAt:
                         new Date().toISOString()
                 }
@@ -271,34 +195,7 @@ function runTest(
 
     child.on(
         'close',
-        async code => {
-            const reportResult = await runAllureReport(
-                executionId,
-                allureResultsDir,
-                allureHtmlDir
-            );
-
-            const report = reportResult.success
-                ? {
-                    status: 'READY',
-                    url: `/api/tests/execution/${executionId}/report/`,
-                    message: null
-                }
-                : {
-                    status: 'FAILED',
-                    url: null,
-                    message: reportResult.message
-                };
-
-            if (reportResult.success) {
-                addLog(executionId, 'Allure report generated successfully');
-            } else {
-                addLog(
-                    executionId,
-                    `Allure report generation failed: ${reportResult.message}`
-                );
-            }
-
+        code => {
             if (code === 0) {
                 addLog(
                     executionId,
@@ -310,7 +207,6 @@ function runTest(
                     {
                         status: 'PASSED',
                         result: 'PASSED',
-                        report,
                         completedAt:
                             new Date().toISOString()
                     }
@@ -327,7 +223,6 @@ function runTest(
                         status: 'FAILED',
                         result:
                             `Playwright exited with code ${code}`,
-                        report,
                         completedAt:
                             new Date().toISOString()
                     }

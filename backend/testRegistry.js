@@ -1,6 +1,6 @@
 const PLAYWRIGHT_PROJECT =
     process.env.PLAYWRIGHT_PROJECT ||
-    'D:\\ai_project\\project_playwright_ai';
+    'C:\\Users\\SaiDheerAdabala\\project_playwright_ai';
 
 const testRegistry = {
     CREATE_PR: {

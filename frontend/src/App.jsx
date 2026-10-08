@@ -218,46 +218,6 @@ export default function App() {
                             )}
                         </div>
 
-                        <section className="report-section">
-                            <div className="report-header">
-                                <div>
-                                    <label>Allure report</label>
-                                    <p>
-                                        {execution.report?.status === 'READY'
-                                            ? 'Execution results and details'
-                                            : execution.report?.status === 'FAILED'
-                                                ? 'The report could not be generated.'
-                                                : 'Generating the report...'}
-                                    </p>
-                                </div>
-                                {execution.report?.status === 'READY' && (
-                                    <a
-                                        className="report-link"
-                                        href={`${API.replace('/api/tests', '')}${execution.report.url}`}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                    >
-                                        Open report
-                                    </a>
-                                )}
-                            </div>
-
-                            {execution.report?.status === 'READY' ? (
-                                <iframe
-                                    className="report-frame"
-                                    src={`${API.replace('/api/tests', '')}${execution.report.url}`}
-                                    title="Allure test report"
-                                />
-                            ) : execution.report?.status === 'FAILED' ? (
-                                <p className="report-error">
-                                    {execution.report.message}
-                                </p>
-                            ) : (
-                                <p className="report-pending">
-                                    The report will appear when test execution finishes.
-                                </p>
-                            )}
-                        </section>
                     </section>
                 )}
             </div>

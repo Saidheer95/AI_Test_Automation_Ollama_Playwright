@@ -168,58 +168,297 @@ function parseJsonResponse(content) {
     }
 }
 
+
 async function resolveWithOpenAI(prompt, testRegistry) {
-    const { schema, systemPrompt } = getWorkflowContext(testRegistry);
+
+    console.log('');
+    console.log('========== OPENAI RESOLUTION ==========');
+
+    const {
+        schema,
+        systemPrompt
+    } = getWorkflowContext(testRegistry);
+
+
+    // --------------------------------------------------------
+    // Validate API key
+    // --------------------------------------------------------
 
     if (!OPENAI_API_KEY) {
+
+        console.error(
+            '[OpenAI] OPENAI_API_KEY is missing'
+        );
+
         throw new Error(
             'OPENAI_API_KEY is required when AI_PROVIDER=openai'
         );
     }
 
+
+    // --------------------------------------------------------
+    // Debug information
+    // --------------------------------------------------------
+
+    console.log(
+        '[OpenAI] Prompt:',
+        prompt
+    );
+
+    console.log(
+        '[OpenAI] Model:',
+        OPENAI_MODEL
+    );
+
+    console.log(
+        '[OpenAI] URL:',
+        OPENAI_URL
+    );
+
+    console.log(
+        '[OpenAI] API Key:',
+        `${OPENAI_API_KEY.substring(0, 7)}...`
+    );
+
+    console.log(
+        '[OpenAI] Available workflows:',
+        Object.keys(testRegistry)
+    );
+
+
+    // --------------------------------------------------------
+    // Send request
+    // --------------------------------------------------------
+
+    console.log(
+        '[OpenAI] Sending request...'
+    );
+
+
     const response = await fetch(
         OPENAI_URL,
         {
             method: 'POST',
+
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${OPENAI_API_KEY}`
+
+                'Authorization':
+                    `Bearer ${OPENAI_API_KEY}`
             },
+
             body: JSON.stringify({
+
                 model: OPENAI_MODEL,
+
                 temperature: 0,
+
                 response_format: {
                     type: 'json_object'
                 },
+
                 messages: [
+
                     {
                         role: 'system',
                         content: systemPrompt
                     },
+
                     {
                         role: 'user',
                         content: prompt
                     }
+
                 ]
             })
         }
     );
 
+
+    // --------------------------------------------------------
+    // HTTP error handling
+    // --------------------------------------------------------
+
+    console.log(
+        '[OpenAI] HTTP status:',
+        response.status
+    );
+
+
     if (!response.ok) {
-        const errorText = await response.text();
+
+        const errorText =
+            await response.text();
+
+        console.error(
+            '[OpenAI] API error:',
+            errorText
+        );
 
         throw new Error(
             `OpenAI HTTP ${response.status}: ${errorText}`
         );
     }
 
-    const data = await response.json();
+
+    // --------------------------------------------------------
+    // Read response
+    // --------------------------------------------------------
+
+    const data =
+        await response.json();
+
+
+    console.log(
+        '[OpenAI] Response received'
+    );
+
 
     const raw =
         data.choices?.[0]?.message?.content;
 
-    return parseJsonResponse(raw);
+
+    console.log(
+        '[OpenAI] Raw model response:',
+        raw
+    );
+
+
+    if (!raw) {
+
+        throw new Error(
+            'OpenAI returned an empty response'
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // Parse JSON
+    // --------------------------------------------------------
+
+    let result;
+
+    try {
+
+        result =
+            JSON.parse(raw);
+
+    } catch (error) {
+
+        console.error(
+            '[OpenAI] Invalid JSON:',
+            raw
+        );
+
+        throw new Error(
+            'OpenAI returned invalid JSON'
+        );
+    }
+
+
+    console.log(
+        '[OpenAI] Parsed result:',
+        JSON.stringify(result, null, 2)
+    );
+
+
+    // --------------------------------------------------------
+    // IMPORTANT:
+    // Support workflowId returned by OpenAI
+    // --------------------------------------------------------
+
+    const workflow =
+        result.workflow ||
+        result.workflowId;
+
+
+    console.log(
+        '[OpenAI] Resolved workflow:',
+        workflow
+    );
+
+
+    // --------------------------------------------------------
+    // Validate workflow
+    // --------------------------------------------------------
+
+    const workflowIds =
+        Object.keys(testRegistry);
+
+
+    if (!workflow) {
+
+        console.warn(
+            '[OpenAI] No workflow returned'
+        );
+
+        return {
+            workflow: 'UNKNOWN',
+            parameters: {}
+        };
+    }
+
+
+    if (
+        !workflowIds.includes(workflow)
+    ) {
+
+        console.error(
+            '[OpenAI] Unsupported workflow:',
+            workflow
+        );
+
+        console.error(
+            '[OpenAI] Supported workflows:',
+            workflowIds
+        );
+
+        return {
+            workflow: 'UNKNOWN',
+            parameters: {}
+        };
+    }
+
+
+    // --------------------------------------------------------
+    // Parameters
+    // --------------------------------------------------------
+
+    const parameters =
+        result.parameters || {};
+
+
+    // --------------------------------------------------------
+    // Final normalized result
+    // --------------------------------------------------------
+
+    const finalResult = {
+        workflow,
+        parameters
+    };
+
+
+    console.log(
+        '[OpenAI] FINAL RESULT:',
+        JSON.stringify(
+            finalResult,
+            null,
+            2
+        )
+    );
+
+
+    console.log(
+        '======================================'
+    );
+
+
+    return finalResult;
 }
+
+
+
+
 
 async function resolveWithOllama(prompt, testRegistry) {
     const { schema, systemPrompt } = getWorkflowContext(testRegistry);
@@ -300,3 +539,5 @@ module.exports = {
     resolveWithOllama,
     resolveWithOpenAI
 };
+
+
