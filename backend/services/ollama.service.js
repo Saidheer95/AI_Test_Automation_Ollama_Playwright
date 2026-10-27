@@ -1,109 +1,27 @@
-// const OLLAMA_URL =
-//     process.env.OLLAMA_URL || 'http://127.0.0.1:11434';
-
-// const OLLAMA_MODEL =
-//     process.env.OLLAMA_MODEL || 'qwen2.5:3b';
-
-// async function resolveWithOllama(prompt, workflows) {
-//     const schema = {
-//         type: 'object',
-//         properties: {
-//             workflow: {
-//                 type: 'string',
-//                 enum: [...workflows, 'UNKNOWN']
-//             },
-//             parameters: {
-//                 type: 'object',
-//                 properties: {
-//                     item: { type: 'string' },
-//                     quantity: { type: 'integer' },
-//                     prNumber: { type: 'string' },
-//                     supplier: { type: 'string' }
-//                 },
-//                 additionalProperties: false
-//             }
-//         },
-//         required: ['workflow', 'parameters'],
-//         additionalProperties: false
-//     };
-
-//     const systemPrompt = `
-// You are an intent resolver for a Playwright test automation platform.
-
-// Available workflows:
-// ${workflows.join('\n')}
-
-// Rules:
-// - Understand the complete user intent, not individual keywords.
-// - "Create a PR" is CREATE_PR.
-// - "Create a purchase requisition" is CREATE_PR.
-// - "Create an RFQ" is CREATE_RFQ.
-// - "Approve PR PR_001" is APPROVE_PR.
-// - "Create contract to PR" is NOT CREATE_PR.
-// - If the requested operation is not represented by an available workflow, return UNKNOWN.
-// - Never invent a workflow.
-// - Never return a Playwright file path.
-// - Never return shell commands.
-// - Extract useful parameters such as item, quantity, prNumber, supplier when explicitly present.
-// - Return only the requested JSON structure.
-// `;
-
-//     const response = await fetch(`${OLLAMA_URL}/api/chat`, {
-//         method: 'POST',
-//         headers: {
-//             'Content-Type': 'application/json'
-//         },
-//         body: JSON.stringify({
-//             model: OLLAMA_MODEL,
-//             stream: false,
-//             format: schema,
-//             options: {
-//                 temperature: 0
-//             },
-//             messages: [
-//                 {
-//                     role: 'system',
-//                     content: systemPrompt
-//                 },
-//                 {
-//                     role: 'user',
-//                     content: prompt
-//                 }
-//             ]
-//         })
-//     });
-
-//     if (!response.ok) {
-//         throw new Error(`Ollama HTTP ${response.status}`);
-//     }
-
-//     const data = await response.json();
-
-//     if (!data.message || !data.message.content) {
-//         throw new Error('Ollama returned an empty response');
-//     }
-
-//     try {
-//         return JSON.parse(data.message.content);
-//     } catch {
-//         throw new Error('Ollama returned invalid JSON');
-//     }
-// }
-
-// module.exports = {
-//     resolveWithOllama
-// };
-
-
 const OLLAMA_URL =
     process.env.OLLAMA_URL ||
     'http://127.0.0.1:11434';
 
 const OLLAMA_MODEL =
     process.env.OLLAMA_MODEL ||
-    'qwen3.5:8b';
+    'qwen3:8b';
 
-async function resolveWithOllama(prompt, testRegistry) {
+const AI_PROVIDER =
+    (process.env.AI_PROVIDER || 'ollama')
+        .toLowerCase();
+
+const OPENAI_API_KEY =
+    process.env.OPENAI_API_KEY;
+
+const OPENAI_MODEL =
+    process.env.OPENAI_MODEL ||
+    'gpt-4o-mini';
+
+const OPENAI_URL =
+    process.env.OPENAI_URL ||
+    'https://api.openai.com/v1/chat/completions';
+
+function getWorkflowContext(testRegistry) {
     const workflowIds = Object.keys(testRegistry);
 
     const workflowDescriptions = workflowIds
@@ -226,6 +144,325 @@ IMPORTANT RULES:
 15. Return only the JSON structure requested by the schema.
 `;
 
+    return {
+        workflowIds,
+        workflowDescriptions,
+        schema,
+        systemPrompt
+    };
+}
+
+function parseJsonResponse(content) {
+    if (!content) {
+        throw new Error(
+            'Model returned an empty response'
+        );
+    }
+
+    try {
+        return JSON.parse(content);
+    } catch (error) {
+        throw new Error(
+            'Model returned invalid JSON'
+        );
+    }
+}
+
+
+async function resolveWithOpenAI(prompt, testRegistry) {
+
+    console.log('');
+    console.log('========== OPENAI RESOLUTION ==========');
+
+    const {
+        schema,
+        systemPrompt
+    } = getWorkflowContext(testRegistry);
+
+
+    // --------------------------------------------------------
+    // Validate API key
+    // --------------------------------------------------------
+
+    if (!OPENAI_API_KEY) {
+
+        console.error(
+            '[OpenAI] OPENAI_API_KEY is missing'
+        );
+
+        throw new Error(
+            'OPENAI_API_KEY is required when AI_PROVIDER=openai'
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // Debug information
+    // --------------------------------------------------------
+
+    console.log(
+        '[OpenAI] Prompt:',
+        prompt
+    );
+
+    console.log(
+        '[OpenAI] Model:',
+        OPENAI_MODEL
+    );
+
+    console.log(
+        '[OpenAI] URL:',
+        OPENAI_URL
+    );
+
+    console.log(
+        '[OpenAI] API Key:',
+        `${OPENAI_API_KEY.substring(0, 7)}...`
+    );
+
+    console.log(
+        '[OpenAI] Available workflows:',
+        Object.keys(testRegistry)
+    );
+
+
+    // --------------------------------------------------------
+    // Send request
+    // --------------------------------------------------------
+
+    console.log(
+        '[OpenAI] Sending request...'
+    );
+
+
+    const response = await fetch(
+        OPENAI_URL,
+        {
+            method: 'POST',
+
+            headers: {
+                'Content-Type': 'application/json',
+
+                'Authorization':
+                    `Bearer ${OPENAI_API_KEY}`
+            },
+
+            body: JSON.stringify({
+
+                model: OPENAI_MODEL,
+
+                temperature: 0,
+
+                response_format: {
+                    type: 'json_object'
+                },
+
+                messages: [
+
+                    {
+                        role: 'system',
+                        content: systemPrompt
+                    },
+
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+
+                ]
+            })
+        }
+    );
+
+
+    // --------------------------------------------------------
+    // HTTP error handling
+    // --------------------------------------------------------
+
+    console.log(
+        '[OpenAI] HTTP status:',
+        response.status
+    );
+
+
+    if (!response.ok) {
+
+        const errorText =
+            await response.text();
+
+        console.error(
+            '[OpenAI] API error:',
+            errorText
+        );
+
+        throw new Error(
+            `OpenAI HTTP ${response.status}: ${errorText}`
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // Read response
+    // --------------------------------------------------------
+
+    const data =
+        await response.json();
+
+
+    console.log(
+        '[OpenAI] Response received'
+    );
+
+
+    const raw =
+        data.choices?.[0]?.message?.content;
+
+
+    console.log(
+        '[OpenAI] Raw model response:',
+        raw
+    );
+
+
+    if (!raw) {
+
+        throw new Error(
+            'OpenAI returned an empty response'
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // Parse JSON
+    // --------------------------------------------------------
+
+    let result;
+
+    try {
+
+        result =
+            JSON.parse(raw);
+
+    } catch (error) {
+
+        console.error(
+            '[OpenAI] Invalid JSON:',
+            raw
+        );
+
+        throw new Error(
+            'OpenAI returned invalid JSON'
+        );
+    }
+
+
+    console.log(
+        '[OpenAI] Parsed result:',
+        JSON.stringify(result, null, 2)
+    );
+
+
+    // --------------------------------------------------------
+    // IMPORTANT:
+    // Support workflowId returned by OpenAI
+    // --------------------------------------------------------
+
+    const workflow =
+        result.workflow ||
+        result.workflowId;
+
+
+    console.log(
+        '[OpenAI] Resolved workflow:',
+        workflow
+    );
+
+
+    // --------------------------------------------------------
+    // Validate workflow
+    // --------------------------------------------------------
+
+    const workflowIds =
+        Object.keys(testRegistry);
+
+
+    if (!workflow) {
+
+        console.warn(
+            '[OpenAI] No workflow returned'
+        );
+
+        return {
+            workflow: 'UNKNOWN',
+            parameters: {}
+        };
+    }
+
+
+    if (
+        !workflowIds.includes(workflow)
+    ) {
+
+        console.error(
+            '[OpenAI] Unsupported workflow:',
+            workflow
+        );
+
+        console.error(
+            '[OpenAI] Supported workflows:',
+            workflowIds
+        );
+
+        return {
+            workflow: 'UNKNOWN',
+            parameters: {}
+        };
+    }
+
+
+    // --------------------------------------------------------
+    // Parameters
+    // --------------------------------------------------------
+
+    const parameters =
+        result.parameters || {};
+
+
+    // --------------------------------------------------------
+    // Final normalized result
+    // --------------------------------------------------------
+
+    const finalResult = {
+        workflow,
+        parameters
+    };
+
+
+    console.log(
+        '[OpenAI] FINAL RESULT:',
+        JSON.stringify(
+            finalResult,
+            null,
+            2
+        )
+    );
+
+
+    console.log(
+        '======================================'
+    );
+
+
+    return finalResult;
+}
+
+
+
+
+
+async function resolveWithOllama(prompt, testRegistry) {
+    const { schema, systemPrompt } = getWorkflowContext(testRegistry);
+
     const response = await fetch(
         `${OLLAMA_URL}/api/chat`,
         {
@@ -280,18 +517,27 @@ IMPORTANT RULES:
         );
     }
 
-    try {
-        const result =
-            JSON.parse(data.message.content);
+    return parseJsonResponse(data.message.content);
+}
 
-        return result;
-    } catch (error) {
-        throw new Error(
-            'Ollama returned invalid JSON'
-        );
+async function resolveWithAI(prompt, testRegistry) {
+    if (AI_PROVIDER === 'openai') {
+        return resolveWithOpenAI(prompt, testRegistry);
     }
+
+    if (AI_PROVIDER === 'ollama') {
+        return resolveWithOllama(prompt, testRegistry);
+    }
+
+    throw new Error(
+        `Unsupported AI provider: ${AI_PROVIDER}. Use 'ollama' or 'openai'.`
+    );
 }
 
 module.exports = {
-    resolveWithOllama
+    resolveWithAI,
+    resolveWithOllama,
+    resolveWithOpenAI
 };
+
+

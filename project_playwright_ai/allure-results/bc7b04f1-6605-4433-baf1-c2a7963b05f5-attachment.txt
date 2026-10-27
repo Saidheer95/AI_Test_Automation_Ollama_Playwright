@@ -1,0 +1,28 @@
+========================================
+        PR CREATION STARTED
+========================================
+Logging in as: abhilash.gundapuneni@prokraya.com
+Email entered successfully: abhilash.gundapuneni@prokraya.com
+Submitting login for: abhilash.gundapuneni@prokraya.com
+Waiting for authenticated state: abhilash.gundapuneni@prokraya.com
+Login completed successfully for: abhilash.gundapuneni@prokraya.com
+Current URL after login: https://qa.prokraya.ai/app/dashboard
+Requestor login successful.
+Adding line 1...
+Adding line 2...
+Adding line 3...
+Checking PR budget...
+Opening Submit for Approval...
+Confirming Submit for Approval...
+PR submitted for approval successfully.
+PR Number saved: PR_01022
+Approver Number saved: PR_01022
+PR Number confirmed: PR_01022
+========================================
+PR CREATION COMPLETED: PR_01022
+========================================
+Logging out current user
+Waiting for login page...
+Login page is ready
+Logout completed successfully
+Requestor logged out successfully.
