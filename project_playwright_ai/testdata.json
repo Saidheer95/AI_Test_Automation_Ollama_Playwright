@@ -21,10 +21,10 @@
         "quantity": "2",
         "uom": "Each",
         "price": "234.67",
-        "prNumber": "PR_01022"
+        "prNumber": "PR_01040"
     },
     "approvers": {
-        "number": "PR_01022",
+        "number": "PR_01040",
         "action": "Approve",
         "comments": "Approved"
     },
@@ -112,7 +112,7 @@
         "termsDescription": "Payment Terms"
     },
     "supplierBid": {
-        "bidNumber": "RFQ260199",
+        "bidNumber": "RFQ260272",
         "typeAction": "Participating",
         "buyerNotes": "Acknowledge by the supplier"
     },
@@ -131,7 +131,7 @@
         "bidDescription": "Enter the bid description",
         "bidType": "RFQ",
         "businessEntity": "Entity1",
-        "buyer": "Harshit",
+        "buyer": "Abhilash",
         "currency": "INR",
         "enterOpendate": "2026-07-23T17:10",
         "enterClosedDate": "2026-07-26T17:27",
