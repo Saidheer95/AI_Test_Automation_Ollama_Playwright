@@ -17,7 +17,7 @@ const testRegistry = {
         name: 'Create RFQ',
         description:
             'Creates a request for quotation (RFQ).',
-        file: 'tests/RFQ/createRFQ.spec.js',
+        file: 'tests/CreateBids/createDirectBid.spec.js',
         requiredParameters: []
     },
 
