@@ -18,7 +18,7 @@ This is a proof-of-concept for AI-driven automation where the LLM chooses from a
 
 ## Architecture
 
-Frontend -> Express API -> Ollama intent resolver -> workflow registry -> Playwright runner
+Frontend -> Express API -> Ollama intent resolver/OPEN API -> workflow registry -> Playwright runner
 
 The flow is intentionally constrained:
 
