@@ -90,30 +90,7 @@ class DirectBid {
         await this.selectDropdown(
             this.selectCurrency,
             testdata.directBid.currency
-        );
-
-        // // Current date & time
-        // const dateTime = new Date();
-
-        // // Add 5 minutes
-        // dateTime.setMinutes(dateTime.getMinutes() + 5);
-
-        // // Format to YYYY-MM-DDTHH:mm
-        // const formattedDateTime =
-        //     dateTime.toISOString().slice(0, 16);
-
-        // const bidOpenDate = this.page.locator(
-        //     this.selectBidOpenDate
-        // );
-
-        // await bidOpenDate.waitFor({
-        //     state: 'visible'
-        // });
-
-        // await bidOpenDate.fill(formattedDateTime);
-
-        // console.log(`Bid Open Date Time : ${formattedDateTime}`);
-
+        );      
         await this.page.click(this.selectBidOpenDate);
         await this.page.fill(this.selectBidOpenDate,dynamicData.openDate);
 
