@@ -1,30 +1,31 @@
 # AI Test Automation Platform
 
-This repository is a demo of an AI-powered test automation flow that turns natural-language prompts into controlled Playwright executions.
+This repository is a demo of an AI-powered test automation flow that maps natural-language prompts to controlled Playwright executions.
 
-The main idea is simple: a user types a business request in plain English, the backend asks a local Ollama model to resolve the intent, and only a registered workflow is allowed to run. This keeps the system safe and predictable instead of allowing arbitrary test execution.
+The project is intent-based for workflow selection, not for generating browser automation. A user types a business request in plain English, the configured AI provider (Ollama by default, or OpenAI) selects a registered workflow and extracts supported parameters, and the backend runs that workflow's predefined Playwright test script. The AI does not create or choose arbitrary scripts or commands.
 
 ## Demo purpose
 
 This project demonstrates how to:
 
 - accept natural-language prompts in a frontend
-- send the prompt to a local Ollama model for intent resolution
+- send the prompt to the configured AI provider for intent resolution
 - validate the resolved workflow against a fixed registry
-- execute only approved Playwright workflows
+- execute the predefined Playwright script for the selected workflow
 - stream execution status and logs back to the UI
 
-This is a proof-of-concept for AI-driven automation where the LLM chooses from a known set of workflows rather than being given unrestricted command execution.
+This is a proof-of-concept for intent-driven workflow selection with script-based execution: the LLM chooses from a known set of workflows rather than being given unrestricted command execution.
 
 ## Architecture
 
-Frontend -> Express API -> Ollama intent resolver/OPEN API -> workflow registry -> Playwright runner
+Frontend -> Express API -> AI intent resolver -> workflow registry -> Playwright runner
 
 The flow is intentionally constrained:
 
-- the model only returns a registered workflow ID
+- the model only returns a registered workflow ID and schema-constrained parameters
 - parameter validation is enforced before execution starts
 - the Playwright project path is configured in the backend
+- each registered workflow maps to a predefined Playwright test file
 - every execution is stored with logs and status updates
 
 ## Prompt design used in this project
@@ -51,6 +52,8 @@ The intent resolution logic is handled in:
 - `backend/services/ollama.service.js`
 - `backend/services/intentResolver.js`
 
+Despite the service filename, the AI service supports both Ollama and OpenAI; `AI_PROVIDER` selects the provider.
+
 ### 2. Natural-language command prompting
 
 The actual prompt is entered by the user in the React UI and submitted to the backend. This is the dynamic prompt that changes per execution.
@@ -69,7 +72,7 @@ This is where the business request reaches the AI layer.
 
 The model is not allowed to reply with free-form text. Instead, the backend defines a strict JSON schema so the model returns only a safe, predictable response.
 
-In `backend/services/ollama.service.js`, the model is instructed to return:
+In `backend/services/ollama.service.js`, the configured model is instructed to return:
 
 ```json
 {
@@ -98,22 +101,27 @@ The system uses a fixed registry of valid workflows. The model must choose one w
 
 The available workflows are:
 
+- `CREATE_Vendor`
 - `CREATE_PR`
 - `CREATE_RFQ`
 - `APPROVE_PR`
 - `PR_TO_BID`
 
-The AI is given those workflow names and descriptions in the system message, and the backend validates the result before running Playwright. If the request does not match a registered workflow, it is rejected.
+The AI is given those workflow names and descriptions in the system message, and the backend validates the result before running Playwright. Each workflow is associated with a predefined test file in the registry. If the request does not match a registered workflow, it is rejected.
+
+### Intent selection vs. test execution
+
+Only workflow selection is intent-based. The AI interprets the user's request and chooses an available workflow; it does not generate test steps or browser actions. After validation, the runner launches the predefined Playwright file registered for that workflow. The Playwright script is responsible for the actual browser automation.
 
 ### Prompt flow summary
 
 1. User enters a natural-language prompt in the frontend.
-2. The backend sends that prompt to Ollama with a system prompt and JSON schema.
+2. The backend sends that prompt to the configured AI provider with a system prompt and JSON schema.
 3. The model resolves the intent and selects one valid workflow.
 4. The backend checks the workflow against the registry and validates required parameters.
-5. Only then does the Playwright test run.
+5. The runner launches the predefined Playwright test file associated with that workflow.
 
-This is the exact pattern used by this project: natural-language input -> intent detection -> workflow selection -> validated execution.
+In short: natural-language input -> intent resolution -> validated workflow selection -> fixed Playwright script execution.
 
 ## Files used in this project
 
@@ -134,7 +142,7 @@ This is the exact pattern used by this project: natural-language input -> intent
   Defines the supported workflows, their descriptions, and the target Playwright test files
 
 - `backend/services/ollama.service.js`  
-  Calls the local Ollama `/api/chat` endpoint and asks for structured JSON output
+  Calls the configured Ollama or OpenAI provider and asks for structured JSON output
 
 - `backend/services/intentResolver.js`  
   Validates the prompt and resolves it into a registered workflow and parameters
@@ -154,18 +162,19 @@ This is the exact pattern used by this project: natural-language input -> intent
 ### Runtime configuration
 
 - `backend/.env`  
-  Local configuration for Ollama and the Playwright project path
+  AI provider and Playwright project configuration
 
 ## Supported demo workflows
 
 The registry currently includes these workflows:
 
+- `CREATE_Vendor` - create a vendor record
 - `CREATE_PR` - create a purchase requisition
 - `CREATE_RFQ` - create a request for quotation
 - `APPROVE_PR` - approve a purchase requisition
 - `PR_TO_BID` - complete the full PR-to-bid flow
 
-Only these IDs are recognized by the system. If a request does not match a registered workflow, it is rejected.
+Only workflow IDs registered in `backend/testRegistry.js` are recognized. If a request does not match a registered workflow, it is rejected.
 
 ## Example prompts
 
@@ -190,11 +199,11 @@ The backend will not start a workflow because `CONTRACT_TO_PR` is not in `testRe
 
 1. User enters a prompt in the React frontend.
 2. The frontend sends the prompt to `POST /api/tests/prompt`.
-3. The backend calls Ollama with a fixed system prompt and JSON schema.
-4. Ollama returns one workflow ID and a set of extracted parameters.
+3. The backend calls the configured AI provider with a fixed system prompt and JSON schema.
+4. The AI provider returns one workflow ID and a set of extracted parameters.
 5. The backend validates the workflow and required input.
 6. The execution is created and stored with logs.
-7. The matching Playwright command is launched from the project configured in `.env`.
+7. The predefined Playwright test file registered for that workflow is launched from the project configured in `.env`.
 8. The frontend polls `GET /api/tests/execution/:id` until the execution finishes.
 
 ## Local setup
@@ -287,7 +296,7 @@ http://localhost:5173
 
 ## Important implementation note
 
-This demo does not allow unrestricted shell execution. The model is not permitted to invent commands or select arbitrary files. It resolves only against the known workflow registry in `backend/testRegistry.js`.
+This demo does not allow unrestricted shell execution. The model is not permitted to invent commands or select arbitrary files. It resolves only against the known workflow registry in `backend/testRegistry.js`. Workflow selection is intent-based, while test execution remains script-based.
 
 The runner starts Playwright by using the configured workflow file and passes execution data through the environment variable `TEST_EXECUTION_DATA`.
 
@@ -311,4 +320,4 @@ This makes it easy to inspect the exact data that was sent to the Playwright lay
 
 ## Summary
 
-This repository is a working demo for safe, local AI orchestration of Playwright test automation. It is designed to show that natural-language prompts can be translated into controlled, validated business workflows without exposing the system to unrestricted automation or command execution.
+This repository is a working demo for controlled AI orchestration of Playwright test automation. It translates natural-language prompts into validated business workflow selections, then runs the corresponding predefined Playwright scripts without exposing the system to unrestricted automation or command execution.
