@@ -3,6 +3,18 @@ const PLAYWRIGHT_PROJECT =
     '../project_playwright_ai';
 
 const testRegistry = {
+
+    CREATE_Vendor: {
+        testId: 'createVendor',
+        name: 'Create Vendor',
+        description:
+            'Creates a new vendor record.',
+        file: 'tests/createvendor.spec.js',
+        requiredParameters: []
+    },
+
+
+
     CREATE_PR: {
         testId: 'createPR',
         name: 'Create Purchase Requisition',
