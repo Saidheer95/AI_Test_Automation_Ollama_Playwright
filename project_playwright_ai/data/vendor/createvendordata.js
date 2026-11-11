@@ -7,18 +7,21 @@ const validLegalEntities = [
     'Proprietorship', 'PSU',
     'Public Limited', 'Public Sector Companies', 'Pvt Limited', 'Trust'
 ];
-const validCountries = [
-    'India', 'United States', 'United Kingdom',
-    'Saudi Arabia', 'Australia', 'Canada', 'Germany', 'Singapore', 'Qatar'
+const validCountries = [ 
+    'India'
+    // 'India', 'United States', 'United Kingdom',
+    // 'Saudi Arabia', 'Australia', 'Canada', 'Germany', 'Singapore', 'Qatar'
 ];
 const mobileCountries = [
-    'India', 'USA', 'United Arab Emirates', 'Saudi Arabia',
-    'Australia', 'Canada', 'Germany', 'Singapore', 'Qatar'
+    'India'
+    // 'India', 'USA', 'United Arab Emirates', 'Saudi Arabia',
+    // 'Australia', 'Canada', 'Germany', 'Singapore', 'Qatar'
 ];
 
 const bankCountries = [
-    'India', 'United States', 'United Kingdom',
-    'Saudi Arabia', 'Australia', 'Canada', 'Germany', 'Singapore', 'Qatar'
+    'India'
+    // 'India', 'United States', 'United Kingdom',
+    // 'Saudi Arabia', 'Australia', 'Canada', 'Germany', 'Singapore', 'Qatar'
 ];
 
 function pick(arr) {
